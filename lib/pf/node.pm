@@ -123,7 +123,7 @@ sub node_db_prepare {
     $node_statements->{'node_modify_sql'} = get_db_handle()->prepare(qq[
         UPDATE node SET
             mac=?, pid=?, category_id=?, status=?, voip=?, bypass_vlan=?,
-            detect_date=?, regdate=?, unregdate=?, lastskip=?,
+            detect_date=?, regdate=?, unregdate=?, lastskip=?, timeleft=?,
             user_agent=?, computername=?, dhcp_fingerprint=?,
             last_arp=?, last_dhcp=?,
             notes=?
@@ -133,7 +133,7 @@ sub node_db_prepare {
     $node_statements->{'node_attributes_sql'} = get_db_handle()->prepare(qq[
         SELECT mac, pid, voip, status, bypass_vlan,
             IF(ISNULL(node_category.name), '', node_category.name) as category,
-            detect_date, regdate, unregdate, lastskip,
+            detect_date, regdate, unregdate, lastskip, timeleft,
             user_agent, computername, dhcp_fingerprint,
             last_arp, last_dhcp,
             node.notes
@@ -180,7 +180,7 @@ sub node_db_prepare {
     $node_statements->{'node_view_sql'} = get_db_handle()->prepare(<<'    SQL');
         SELECT node.mac, node.pid, node.voip, node.bypass_vlan, node.status, node.category_id,
             IF(ISNULL(node_category.name), '', node_category.name) as category,
-            node.detect_date, node.regdate, node.unregdate, node.lastskip,
+            node.detect_date, node.regdate, node.unregdate, node.lastskip, node.timeleft,
             node.user_agent, node.computername, node.dhcp_fingerprint,
             node.last_arp, node.last_dhcp,
             node.notes,
@@ -196,7 +196,8 @@ sub node_db_prepare {
            locationlog.switch as last_switch, locationlog.port as last_port, locationlog.vlan as last_vlan,
            IF(ISNULL(locationlog.connection_type), '', locationlog.connection_type) as last_connection_type,
            locationlog.dot1x_username as last_dot1x_username, locationlog.ssid as last_ssid,
-           locationlog.start_time as last_start_time
+           locationlog.start_time as last_start_time,
+           UNIX_TIMESTAMP(locationlog.start_time) as last_start_timestamp
        FROM locationlog
        WHERE mac = ? AND end_time IS NULL
     SQL
@@ -767,7 +768,8 @@ sub node_modify {
     my $sth = db_query_execute(NODE, $node_statements, 'node_modify_sql',
         $new_mac, $existing->{pid}, $existing->{category_id}, $existing->{status}, $existing->{voip},
         $existing->{bypass_vlan},
-        $existing->{detect_date}, $existing->{regdate}, $existing->{unregdate}, $existing->{lastskip},
+        $existing->{detect_date}, $existing->{regdate}, $existing->{unregdate},
+        $existing->{lastskip}, $existing->{timeleft},
         $existing->{user_agent}, $existing->{computername}, $existing->{dhcp_fingerprint},
         $existing->{last_arp}, $existing->{last_dhcp},
         $existing->{notes},
