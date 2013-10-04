@@ -1,57 +1,57 @@
-package pfappserver::Controller::Configuration::MacAddress;
+package pf::ConfigStore::AdminRoles;
 
 =head1 NAME
 
-pfappserver::Controller::Configuration::MacAddress - Catalyst Controller
+pf::ConfigStore::AdminRoles add documentation
+
+=cut
 
 =head1 DESCRIPTION
 
-Catalyst Controller.
+pf::ConfigStore::AdminRoles
 
 =cut
-
-use strict;
-use warnings;
 
 use HTTP::Status qw(:constants is_error is_success);
-use Moose;
+use Moo;
 use namespace::autoclean;
+use pf::file_paths;
+use pf::admin_roles;
+extends 'pf::ConfigStore';
 
-use pf::util qw(load_oui download_oui);
+sub expandableParams { return (qw(actions)); }
 
-BEGIN { extends 'pfappserver::Base::Controller'; }
+sub _buildCachedConfig { $cached_adminroles_config }
 
-=head2 index
+=head2 cleanupAfterRead
+
+Expand list of actions
 
 =cut
 
-sub index :Path {
-    my ( $self, $c ) = @_;
-    $c->go('simple_search');
+sub cleanupAfterRead {
+    my ($self, $id, $item) = @_;
+    $self->expand_list($item, $self->expandableParams);
 }
 
-=head2 simple_search
+=head2 cleanupBeforeCommit
+
+Flatten list of actions before updating or creating
 
 =cut
 
-sub simple_search :Local :Args() :SimpleSearch('MacAddress') :AdminRole('MAC_READ') { }
-
-=head2 update
-
-=cut
-
-sub update :Local :Args(0) :AdminRole('MAC_UPDATE') {
-    my ( $self, $c ) = @_;
-    $c->stash->{current_view} = 'JSON';
-    my ($status, $status_msg) = download_oui();
-    load_oui(1);
-    $c->response->status($status);
-    $c->stash->{status_msg} = $status_msg;
+sub cleanupBeforeCommit {
+    my ($self, $id, $item) = @_;
+    $self->flatten_list($item, $self->expandableParams);
 }
+
+
+
+__PACKAGE__->meta->make_immutable;
 
 =head1 COPYRIGHT
 
-Copyright (C) 2012 Inverse inc.
+Copyright (C) 2013 Inverse inc.
 
 =head1 LICENSE
 
@@ -72,6 +72,5 @@ USA.
 
 =cut
 
-__PACKAGE__->meta->make_immutable;
-
 1;
+

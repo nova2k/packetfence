@@ -15,9 +15,11 @@ use warnings;
 use Date::Parse;
 use HTTP::Status qw(:constants is_error is_success);
 use Moose;
+use Moose::Util qw(apply_all_roles);
 use namespace::autoclean;
 use POSIX;
 use URI::Escape;
+use pfappserver::Base::Action::AdminRole;
 use pfappserver::Base::Action::SimpleSearch;
 
 use pf::os;
@@ -75,33 +77,66 @@ sub auto :Private {
 
 =head2 valid_param
 
+Subroutines with the 'SimpleSearch' attribute will automatically stash
+URL parameters listed in our VALID_PARAMS hash.
+
 =cut
 
 sub valid_param {
-    my ($self,$key) = @_;
+    my ($self, $key) = @_;
     return exists $VALID_PARAMS{$key};
 }
 
+=head2 _parse_SimpleSearch_attr
+
+Customize the parsing of the 'SimpleSearch' subroutine attribute. Returns a hash with the attribute value.
+
+See https://metacpan.org/module/Catalyst::Controller#parse_-name-_attr
+
+=cut
+
 sub _parse_SimpleSearch_attr {
-    my ( $self, $c, $name, $value ) = @_;
+    my ($self, $c, $name, $value) = @_;
     return SimpleSearch => $value;
 }
 
+=head2 _parse_AdminRole_attr
+
+Customize the parsing of the 'AdminRole' subroutine attribute. Returns a hash with the attribute value.
+
+See https://metacpan.org/module/Catalyst::Controller#parse_-name-_attr
+
+=cut
+
+sub _parse_AdminRole_attr {
+    my ($self, $c, $name, $value) = @_;
+    return AdminRole => $value;
+}
+
 =head2 around create_action
+
+Construction of a new Catalyst::Action.
+
+See https://metacpan.org/module/Catalyst::Controller#self-create_action-args
 
 =cut
 
 around create_action => sub {
     my ($orig, $self, %args) = @_;
 
-    return $self->$orig(%args)
-        if $args{name} =~ /^_(DISPATCH|BEGIN|AUTO|ACTION|END)$/;
-
-    my ($model) = @{ $args{attributes}->{SimpleSearch} || [] };
-
-    return $self->$orig(%args) unless $model;
-
-    return Base::Action::SimpleSearch->new(\%args);
+    my $model;
+    my $action = $self->$orig(%args);
+    unless ($args{name} =~ /^_(DISPATCH|BEGIN|AUTO|ACTION|END)$/) {
+        my @roles;
+        if(@{ $args{attributes}->{SimpleSearch} || [] }) {
+            push @roles,'pfappserver::Base::Action::SimpleSearch';
+        }
+        if(@{ $args{attributes}->{AdminRole} || [] }) {
+            push @roles,'pfappserver::Base::Action::AdminRole';
+        }
+        apply_all_roles($action,@roles) if @roles;
+    }
+    return $action;
 };
 
 =head2 _list_items
@@ -192,7 +227,7 @@ sub add_fake_profile_data {
 =cut
 
 sub getForm {
-    my ($self,$c,@args) = @_;
+    my ($self, $c, @args) = @_;
     unless (@args) {
         if (exists $c->action->{form} && defined (my $form = $c->action->{form})) {
             push @args,$form;
@@ -206,7 +241,7 @@ sub getForm {
 =cut
 
 sub getModel {
-    my ($self,$c,@args) = @_;
+    my ($self, $c, @args) = @_;
     unless (@args) {
         if (exists $c->action->{model} && defined (my $model = $c->action->{model})) {
             push @args,$model;

@@ -1,12 +1,12 @@
-package pfappserver::Controller::Configuration::FloatingDevice;
+package pfappserver::Controller::Configuration::AdminRoles;
 
 =head1 NAME
 
-pfappserver::Controller::Configuration::FloatingDevice - Catalyst Controller
+pfappserver::Controller::Configuration::AdminRoles - Catalyst Controller
 
 =head1 DESCRIPTION
 
-Controller for floating device management.
+Controller for admin roles management.
 
 =cut
 
@@ -26,59 +26,54 @@ BEGIN {
 __PACKAGE__->config(
     action => {
         # Reconfigure the object action from pfappserver::Base::Controller::Crud
-        object => { Chained => '/', PathPart => 'configuration/floatingdevice', CaptureArgs => 1 },
+        object => { Chained => '/', PathPart => 'configuration/adminroles', CaptureArgs => 1 },
         # Configure access rights
-        view   => { AdminRole => 'FLOATING_DEVICES_READ' },
-        list   => { AdminRole => 'FLOATING_DEVICES_READ' },
-        create => { AdminRole => 'FLOATING_DEVICES_CREATE' },
-        clone  => { AdminRole => 'FLOATING_DEVICES_CREATE' },
-        update => { AdminRole => 'FLOATING_DEVICES_UPDATE' },
-        remove => { AdminRole => 'FLOATING_DEVICES_DELETE' },
+        view   => { AdminRole => 'ADMIN_ROLES_READ' },
+        list   => { AdminRole => 'ADMIN_ROLES_READ' },
+        create => { AdminRole => 'ADMIN_ROLES_CREATE' },
+        clone  => { AdminRole => 'ADMIN_ROLES_CREATE' },
+        update => { AdminRole => 'ADMIN_ROLES_UPDATE' },
+        remove => { AdminRole => 'ADMIN_ROLES_DELETE' },
     },
     action_args => {
         # Setting the global model and form for all actions
-        '*' => { model => "Config::FloatingDevice", form => "Config::FloatingDevice" },
+        '*' => { model => "Config::AdminRoles", form => "Config::AdminRoles" },
     },
 );
 
 =head1 METHODS
 
-=head2 after list
+=head2 after create/clone
 
-Check which floating device is also defined as a switch
-
-=cut
-
-after list => sub {
-    my ($self, $c) = @_;
-
-    my ($status, $switch, $ip);
-    my $switchModel = $c->model('Config::Switch');
-    foreach my $floatingdevice (@{$c->stash->{items}}) {
-        $ip = $floatingdevice->{ip};
-        if ($ip) {
-            ($status, $switch) = $switchModel->read($ip);
-            if (is_success($status)) {
-                $floatingdevice->{switch} = $switch;
-            }
-        }
-    }
-};
-
-=head2 after create clone
-
-Show the 'view' template when creating or cloning a floating device.
+Show the 'view' template when creating or cloning an admin role.
 
 =cut
 
 after [qw(create clone)] => sub {
     my ($self, $c) = @_;
-    if (!(is_success($c->response->status) && $c->request->method eq 'POST' )) {
-        $c->stash->{template} = 'configuration/floatingdevice/view.tt';
+    if (!(is_success($c->response->status) && $c->request->method eq 'POST')) {
+        $c->stash->{template} = 'configuration/adminroles/view.tt';
+    }
+};
+
+=head2 after create/clone/update
+
+List admin roles after creating or updating a role.
+
+=cut
+
+after [qw(create clone update)] => sub {
+    my ($self, $c) = @_;
+    if (is_success($c->response->status) && $c->request->method eq 'POST') {
+        $c->stash->{current_view} = 'HTML';
+        $c->stash->{template} = 'configuration/adminroles/list.tt';
+        $c->forward('list');
     }
 };
 
 =head2 after view
+
+Set the action URL to either "create" or "update".
 
 =cut
 
@@ -94,9 +89,27 @@ after view => sub {
     }
 };
 
+=head2 after _setup_object
+
+Sort the actions of the admin role.
+
+This subroutine is defined in pfappserver::Base::Controller::Crud.
+
+=cut
+
+after _setup_object => sub {
+    my ($self, $c) = @_;
+
+    # Sort actions
+    if (is_success($c->response->status)) {
+        my @actions = sort @{$c->stash->{'item'}->{'actions'}};
+        $c->stash->{'item'}->{'actions'} = \@actions;
+    }
+};
+
 =head2 index
 
-Usage: /configuration/floatingdevice/
+Usage: /configuration/adminroles/
 
 =cut
 

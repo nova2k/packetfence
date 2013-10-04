@@ -1,57 +1,32 @@
-package pfappserver::Controller::Configuration::MacAddress;
+package pfappserver::Model::Config::AdminRoles;
 
 =head1 NAME
 
-pfappserver::Controller::Configuration::MacAddress - Catalyst Controller
-
-=head1 DESCRIPTION
-
-Catalyst Controller.
+pfappserver::Model::Config::AdminRoles add documentation
 
 =cut
 
-use strict;
-use warnings;
+=head1 DESCRIPTION
+
+pfappserver::Model::Config::AdminRoles
+
+=cut
 
 use HTTP::Status qw(:constants is_error is_success);
 use Moose;
 use namespace::autoclean;
+use pf::ConfigStore::AdminRoles;
 
-use pf::util qw(load_oui download_oui);
+extends 'pfappserver::Base::Model::Config';
 
-BEGIN { extends 'pfappserver::Base::Controller'; }
 
-=head2 index
+sub _buildConfigStore { pf::ConfigStore::AdminRoles->new }
 
-=cut
-
-sub index :Path {
-    my ( $self, $c ) = @_;
-    $c->go('simple_search');
-}
-
-=head2 simple_search
-
-=cut
-
-sub simple_search :Local :Args() :SimpleSearch('MacAddress') :AdminRole('MAC_READ') { }
-
-=head2 update
-
-=cut
-
-sub update :Local :Args(0) :AdminRole('MAC_UPDATE') {
-    my ( $self, $c ) = @_;
-    $c->stash->{current_view} = 'JSON';
-    my ($status, $status_msg) = download_oui();
-    load_oui(1);
-    $c->response->status($status);
-    $c->stash->{status_msg} = $status_msg;
-}
+__PACKAGE__->meta->make_immutable;
 
 =head1 COPYRIGHT
 
-Copyright (C) 2012 Inverse inc.
+Copyright (C) 2013 Inverse inc.
 
 =head1 LICENSE
 
@@ -72,6 +47,5 @@ USA.
 
 =cut
 
-__PACKAGE__->meta->make_immutable;
-
 1;
+

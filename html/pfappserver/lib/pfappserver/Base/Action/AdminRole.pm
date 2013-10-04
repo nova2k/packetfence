@@ -1,4 +1,4 @@
-package pfappserver::Base::Action::SimpleSearch;
+package pfappserver::Base::Action::AdminRole;
 
 =head1 NAME
 
@@ -6,25 +6,47 @@ package pfappserver::Base::Action::SimpleSearch;
 
 =head1 DESCRIPTION
 
-SimpleSearch
+AdminRole
 
 =cut
 
 use strict;
 use warnings;
+use HTTP::Status qw(:constants);
 use Moose::Role;
 use namespace::autoclean;
 
-after execute => sub {
+use pf::admin_roles;
+
+=head1 METHODS
+
+=head2 before execute
+
+Verify that the user has the rights to execute the controller's action.
+
+=cut
+
+before execute => sub {
     my ( $self, $controller, $c, %args ) = @_;
-    %args = map { $_ => $args{$_}  } grep { $controller->valid_param($_) } keys %args;
-    $c->stash(%args);
-    $controller->_list_items( $c, $self->attributes->{SimpleSearch}[0] );
+
+    my $action = $self->attributes->{AdminRole}[0];
+    my $roles = [];
+    $roles = [$c->user->roles] if $c->user_exists;
+
+    unless(admin_can($roles, $action)) {
+        $c->log->debug(sprintf('Access to action %s was refused to user %s with admin roles %s',
+                               $action, $c->user->id, join(',', @$roles)));
+        $c->response->status(HTTP_UNAUTHORIZED);
+        $c->stash->{status_msg} = "You don't have the rights to perform this action.";
+        $c->stash->{current_view} = 'JSON';
+        $c->detach();
+    }
 };
+
 
 =head1 COPYRIGHT
 
-Copyright (C) 2012 Inverse inc.
+Copyright (C) 2013 Inverse inc.
 
 =head1 LICENSE
 
