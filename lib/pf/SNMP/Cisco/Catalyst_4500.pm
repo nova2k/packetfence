@@ -23,14 +23,21 @@ F<conf/switches.conf>
 
 use strict;
 use warnings;
+use diagnostics;
 use Log::Log4perl;
 use Net::SNMP;
+use Try::Tiny;
+
+use pf::accounting qw(node_accounting_current_sessionid);
+use pf::config;
+use pf::node qw(node_attributes);
+use pf::util::radius qw(perform_coa perform_disconnect);
 
 use base ('pf::SNMP::Cisco::Catalyst_2960');
 
 sub description { 'Cisco Catalyst 4500 Series' }
 
-=head2 getIfIndexByNasPortId
+=item getIfIndexByNasPortId
 
 Fetch the ifindex on the switch by NAS-Port-Id radius attribute
 
@@ -88,3 +95,4 @@ USA.
 # vim: set shiftwidth=4:
 # vim: set expandtab:
 # vim: set backspace=indent,eol,start:
+
