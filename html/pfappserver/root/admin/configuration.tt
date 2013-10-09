@@ -19,6 +19,7 @@
         'admin/configuration/violations',
         'admin/configuration/soh',
         'admin/configuration/roles',
+        'admin/configuration/items',
         'js/interface',
         'js/bootstrapSwitch',
         ]
@@ -88,6 +89,7 @@ table.sources {
               [% pf_section_entry( 'advanced', 'Advanced') %]
               [% pf_section_entry( 'provisioning', 'Provisioning') %]
               [% list_entry('Portal::Profile', 'index', 'Portal Profiles') %]
+              [% list_entry('ConfigStore::Mdm', 'index', 'Mobile Device Management') %]
               [% pf_section_entry( 'webservices', 'Web Services') %]
               <li class="nav-header">[% l('Network') %]<li>
               [% pf_section_entry( 'interfaces', 'Interfaces') %]
