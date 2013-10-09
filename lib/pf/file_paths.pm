@@ -46,7 +46,7 @@ our (
     #Other configuraton files variables
     $switches_config_file, $violations_config_file, $authentication_config_file,
     $chi_config_file, $ui_config_file, $floating_devices_file, $log_config_file,
-    @stored_config_files, @log_files,
+    @log_files,
     $wrix_config_file,
     @stored_config_files, $admin_roles_config_file
 );
